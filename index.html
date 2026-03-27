@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Random Fake Info + Firebase Realtime DB + Export TXT</title>
+  <script type="module">
+    // Import Firebase SDK (modular v9+)
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+    import { getDatabase, ref, push, onValue, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
+
+    // THAY BẰNG CONFIG CỦA BẠN TỪ FIREBASE CONSOLE
+    const firebaseConfig = {
+      apiKey: "AIzaSy...your-api-key...",
+      authDomain: "dotnhachungmay.firebaseapp.com",
+      databaseURL: "https://dotnhachungmay-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "dotnhachungmay",
+      storageBucket: "dotnhachungmay.appspot.com",
+      messagingSenderId: "...",
+      appId: "1:...:web:..."
+    };
+
+    // Khởi tạo Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const registrationsRef = ref(db, 'registrations');
+
+    // Danh sách họ, tên đệm, tên chính (Việt Nam)
+    const surnames = ["Nguyễn", "Trần", "Lê", "Phạm", "Hoàng", "Huỳnh", "Vũ", "Võ", "Đặng", "Bùi", "Đỗ", "Hồ", "Ngô", "Dương", "Lý"];
+    const maleNames = ["Văn An", "Thành Công", "Minh Quân", "Hữu Phước", "Quốc Bảo", "Anh Tuấn", "Đức Huy", "Long Nhật", "Phong Lan", "Tuấn Kiệt"];
+    const femaleNames = ["Thị Hồng", "Ngọc Lan", "Thanh Thảo", "Thu Hương", "Mai Anh", "Phương Linh", "Diễm My", "Như Ý", "Yến Nhi", "Hoa Hồng"];
+
+    function randomItem(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    function randomNumber(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function generateRandomString(length) {
+      const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+      let str = "";
+      for (let i = 0; i < length; i++) {
+        str += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return str;
+    }
+
+    function generateFakeData() {
+      const isMale = Math.random() > 0.5;
+      const gender = isMale ? "Nam" : "Nữ";
+
+      const surname = randomItem(surnames);
+      const namePart = isMale ? randomItem(maleNames) : randomItem(femaleNames);
+      const fullName = `${surname} ${namePart}`;
+
+      const year = randomNumber(1985, 2005);
+      const month = randomNumber(1, 12);
+      const day = randomNumber(1, 28);
+      const birthday = `${day.toString().padStart(2, '0')}/${month.toString().padStart(2, '0')}/${year}`;
+
+      const emailPrefix = generateRandomString(randomNumber(6, 12));
+      const email = `${emailPrefix}@iq920.fun`;
+
+      const password = `Ab${generateRandomString(8)}${randomNumber(100,999)}!`;
+
+      const phonePrefix = randomItem(["09", "03", "07", "08"]);
+      const phone = `${phonePrefix}${randomNumber(10000000, 99999999)}`;
+
+      return { fullName, birthday, gender, email, password, phone, timestamp: new Date().toLocaleString('vi-VN') };
+    }
+
+    // Lưu vào Firebase
+    function saveToFirebase(data) {
+      push(registrationsRef, data)
+        .then(() => console.log("Lưu thành công!"))
+        .catch(err => console.error("Lỗi lưu:", err));
+    }
+
+    // Hiển thị real-time
+    function listenRealtime() {
+      const dataList = document.getElementById("dataList");
+      onValue(registrationsRef, (snapshot) => {
+        dataList.innerHTML = "";
+        if (snapshot.exists()) {
+          snapshot.forEach((child) => {
+            const item = child.val();
+            const div = document.createElement("div");
+            div.className = "info-box";
+            div.innerHTML = `
+              <strong>ID:</strong> ${child.key}<br>
+              <strong>Họ tên:</strong> ${item.fullName}<br>
+              <strong>Ngày sinh:</strong> ${item.birthday}<br>
+              <strong>Giới tính:</strong> ${item.gender}<br>
+              <strong>Email:</strong> ${item.email}<br>
+              <strong>Mật khẩu:</strong> ${item.password}<br>
+              <strong>Điện thoại:</strong> ${item.phone}<br>
+              <strong>Thời gian:</strong> ${item.timestamp}
+            `;
+            dataList.appendChild(div);
+          });
+        } else {
+          dataList.innerHTML = "<p>Chưa có dữ liệu nào.</p>";
+        }
+      });
+    }
+
+    // Xuất ra TXT và tải về
+    function exportToTxt() {
+      const dataList = document.getElementById("dataList").querySelectorAll(".info-box");
+      if (dataList.length === 0) {
+        alert("Chưa có dữ liệu để xuất!");
+        return;
+      }
+
+      let content = "DANH SÁCH THÔNG TIN ĐĂNG KÝ NGẪU NHIÊN\n";
+      content += "====================================\n\n";
+
+      dataList.forEach((box, index) => {
+        content += `Bộ ${index + 1}:\n`;
+        content += box.innerText.replace(/\n/g, "\n") + "\n";
+        content += "------------------------------------\n\n";
+      });
+
+      const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `fake-registrations-${new Date().toISOString().slice(0,10)}.txt`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // Sự kiện nút
+    window.onload = () => {
+      listenRealtime(); // Bắt đầu lắng nghe real-time ngay khi load
+
+      document.getElementById("generateBtn").onclick = () => {
+        const data = generateFakeData();
+        saveToFirebase(data);
+        // Cập nhật real-time sẽ tự chạy nhờ onValue
+      };
+
+      document.getElementById("exportBtn").onclick = exportToTxt;
+    };
+  </script>
+
+  <style>
+    body { font-family: Arial, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; color: #1c1e21; }
+    .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    h1 { text-align: center; color: #1877f2; }
+    button { padding: 12px 24px; background: #1877f2; color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; margin: 10px; }
+    button:hover { background: #166fe5; }
+    .info-box { background: #f5f6f7; padding: 15px; border-radius: 6px; margin: 10px 0; font-size: 15px; line-height: 1.5; white-space: pre-wrap; }
+    #dataList { max-height: 500px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; border-radius: 6px; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Random Fake Info + Lưu Firebase Realtime + Export TXT</h1>
+
+  <button id="generateBtn">Tạo & Lưu thông tin mới vào DB</button>
+  <button id="exportBtn">Xuất toàn bộ dữ liệu ra file TXT</button>
+
+  <h3>Danh sách thông tin đã lưu (real-time):</h3>
+  <div id="dataList">
+    <p>Đang tải dữ liệu từ Firebase...</p>
+  </div>
+</div>
+
+</body>
+</html>
