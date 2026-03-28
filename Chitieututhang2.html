@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý Chi Tiêu Theo Ngày</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        body { background-color: #f0f2f5; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .summary-card { background: linear-gradient(45deg, #4e73df, #224abe); color: white; border: none; border-radius: 15px; }
+        .date-item { transition: transform 0.2s; cursor: pointer; border-radius: 12px; border: 1px solid #e3e6f0; }
+        .date-item:hover { transform: translateY(-5px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); background-color: #fff; }
+        .icon-circle { width: 45px; height: 45px; background: #e8f0fe; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #4e73df; }
+    </style>
+</head>
+<body>
+
+<div class="container py-5">
+    <!-- Header & Tổng chi tiêu toàn bộ -->
+    <div class="card summary-card shadow mb-4">
+        <div class="card-body text-center py-4">
+            <h6 class="text-uppercase mb-2 opacity-75">Tổng chi tiêu hệ thống</h6>
+            <h1 class="display-4 fw-bold" id="grandTotal">0đ</h1>
+            <p class="mb-0" id="countDays">Đang kết nối dữ liệu...</p>
+        </div>
+    </div>
+
+    <h5 class="mb-3 fw-bold"><i class="bi bi-calendar3 me-2"></i>Lịch sử chi tiêu</h5>
+    
+    <!-- Danh sách các ngày -->
+    <div class="row g-3" id="dateList">
+        <!-- Các card ngày sẽ render ở đây -->
+    </div>
+</div>
+
+<!-- Modal chi tiết chi tiêu -->
+<div class="modal fade" id="detailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold" id="modalDateTitle">Chi tiết ngày</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <ul class="list-group list-group-flush" id="modalItems">
+                    <!-- Item chi tiết -->
+                </ul>
+                <div class="d-flex justify-content-between mt-4 p-3 bg-primary-subtle rounded-3">
+                    <span class="fw-bold text-primary">Tổng cộng ngày:</span>
+                    <span class="fw-bold text-primary" id="modalDayTotal">0đ</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+    const firebaseConfig = {
+        databaseURL: "https://khoanchitrongngay-default-rtdb.asia-southeast1.firebasedatabase.app/"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const chiTieuRef = ref(db, 'chi-tieu');
+
+    // Biến lưu trữ dữ liệu đã nhóm
+    let groupedData = {};
+
+    onValue(chiTieuRef, (snapshot) => {
+        const data = snapshot.val();
+        if (!data) return;
+
+        groupedData = {}; // Reset
+        let grandTotal = 0;
+
+        // 1. Nhóm dữ liệu theo ngày
+        Object.keys(data).forEach(key => {
+            const item = data[key];
+            const date = item.ngay || "Chưa phân loại";
+            
+            if (!groupedData[date]) {
+                groupedData[date] = { items: [], total: 0 };
+            }
+            
+            groupedData[date].items.push(item);
+            groupedData[date].total += Number(item.so_tien || 0);
+            grandTotal += Number(item.so_tien || 0);
+        });
+
+        renderDateCards(groupedData);
+        document.getElementById('grandTotal').innerText = grandTotal.toLocaleString() + "đ";
+        document.getElementById('countDays').innerText = `Dữ liệu từ ${Object.keys(groupedData).length} ngày khác nhau`;
+    });
+
+    // 2. Render danh sách các ngày ra màn hình
+    function renderDateCards(data) {
+        const container = document.getElementById('dateList');
+        container.innerHTML = "";
+
+        // Sắp xếp ngày mới nhất lên đầu
+        const sortedDates = Object.keys(data).sort((a, b) => new Date(b) - new Date(a));
+
+        sortedDates.forEach(date => {
+            const dayInfo = data[date];
+            const card = `
+                <div class="col-md-6 col-lg-4">
+                    <div class="card date-item shadow-sm" onclick="showDetail('${date}')">
+                        <div class="card-body d-flex align-items-center">
+                            <div class="icon-circle me-3">
+                                <i class="bi bi-wallet2"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="text-muted small">${date}</div>
+                                <div class="fw-bold text-dark h5 mb-0">${dayInfo.total.toLocaleString()}đ</div>
+                            </div>
+                            <i class="bi bi-chevron-right text-muted"></i>
+                        </div>
+                    </div>
+                </div>
+            `;
+            container.innerHTML += card;
+        });
+    }
+
+    // 3. Hiển thị Popup chi tiết (Gắn vào window để gọi từ thuộc tính onclick)
+    window.showDetail = (date) => {
+        const dayData = groupedData[date];
+        document.getElementById('modalDateTitle').innerText = `Chi tiêu ngày ${date}`;
+        document.getElementById('modalDayTotal').innerText = dayData.total.toLocaleString() + "đ";
+        
+        const listContainer = document.getElementById('modalItems');
+        listContainer.innerHTML = dayData.items.map(item => `
+            <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-3">
+                <div>
+                    <div class="fw-semibold">${item.ten || item.ghi_chu || 'Chi tiêu không tên'}</div>
+                    <small class="text-muted">${item.loai || 'Thông thường'}</small>
+                </div>
+                <span class="badge bg-danger-subtle text-danger rounded-pill fw-bold" style="font-size: 0.9rem;">
+                    -${Number(item.so_tien).toLocaleString()}đ
+                </span>
+            </li>
+        `).join('');
+
+        const modal = new bootstrap.Modal(document.getElementById('detailModal'));
+        modal.show();
+    };
+
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
