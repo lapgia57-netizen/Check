@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Random Fake Info + Firebase Realtime DB + Export TXT</title>
+  <title>Random Fake Info Việt Nam</title>
   <script type="module">
-    // Import Firebase SDK (modular v9+)
+    // Import Firebase
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-    import { getDatabase, ref, push, onValue, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
+    import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
 
-    // THAY BẰNG CONFIG CỦA BẠN TỪ FIREBASE CONSOLE
+    // ==================== THAY CONFIG CỦA BẠN VÀO ĐÂY ====================
     const firebaseConfig = {
       apiKey: "AIzaSy...your-api-key...",
       authDomain: "dotnhachungmay.firebaseapp.com",
@@ -20,15 +20,23 @@
       appId: "1:...:web:..."
     };
 
-    // Khởi tạo Firebase
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
     const registrationsRef = ref(db, 'registrations');
 
-    // Danh sách họ, tên đệm, tên chính (Việt Nam)
-    const surnames = ["Nguyễn", "Trần", "Lê", "Phạm", "Hoàng", "Huỳnh", "Vũ", "Võ", "Đặng", "Bùi", "Đỗ", "Hồ", "Ngô", "Dương", "Lý"];
-    const maleNames = ["Văn An", "Thành Công", "Minh Quân", "Hữu Phước", "Quốc Bảo", "Anh Tuấn", "Đức Huy", "Long Nhật", "Phong Lan", "Tuấn Kiệt"];
-    const femaleNames = ["Thị Hồng", "Ngọc Lan", "Thanh Thảo", "Thu Hương", "Mai Anh", "Phương Linh", "Diễm My", "Như Ý", "Yến Nhi", "Hoa Hồng"];
+    // ==================== DANH SÁCH DỮ LIỆU PHONG PHÚ ====================
+    const surnames = [
+      "Nguyễn", "Trần", "Lê", "Phạm", "Hoàng", "Huỳnh", "Vũ", "Võ", "Đặng", "Bùi",
+      "Đỗ", "Hồ", "Ngô", "Dương", "Lý", "Phan", "Trương", "Đinh", "Lâm", "Phùng",
+      "Mai", "Tô", "Đào", "Cao", "Trịnh", "Vương", "Đoàn", "Hà", "Bạch", "Chu",
+      "Lưu", "Lương", "Thái", "Tạ", "Tăng", "Quách", "Thân", "Hứa", "Lý", "Điền"
+    ];
+
+    const maleMiddleNames = ["Văn", "Thành", "Minh", "Hữu", "Quốc", "Anh", "Đức", "Long", "Phong", "Tuấn", "Gia", "Bảo", "Huy", "Khánh", "Nam", "Thái", "Công"];
+    const maleFirstNames = ["An", "Công", "Quân", "Phước", "Bảo", "Tuấn", "Huy", "Nhật", "Kiệt", "Dũng", "Hoàng", "Khang", "Long", "Minh", "Phát", "Thắng", "Vinh", "Đạt", "Hùng", "Lộc"];
+
+    const femaleMiddleNames = ["Thị", "Ngọc", "Thanh", "Thu", "Mai", "Phương", "Diễm", "Như", "Yến", "Hoa", "Bích", "Kim", "Mỹ", "Hồng", "Lan", "Thùy", "Trâm"];
+    const femaleFirstNames = ["Hồng", "Lan", "Thảo", "Hương", "Anh", "Linh", "My", "Ý", "Nhi", "Hồng", "Trang", "Vy", "Quỳnh", "Chi", "Ngân", "Dung", "Kiều", "Trinh", "Phúc", "Giang"];
 
     function randomItem(arr) {
       return arr[Math.floor(Math.random() * arr.length)];
@@ -47,69 +55,110 @@
       return str;
     }
 
+    // Tạo tên đầy đủ với ít trùng lặp hơn
+    function generateFullName(isMale) {
+      const surname = randomItem(surnames);
+      
+      if (isMale) {
+        // Cách 1: Họ + Tên đệm + Tên chính
+        if (Math.random() > 0.4) {
+          return `${surname} ${randomItem(maleMiddleNames)} ${randomItem(maleFirstNames)}`;
+        }
+        // Cách 2: Họ + Tên chính (ngắn gọn)
+        return `${surname} ${randomItem(maleFirstNames)}`;
+      } else {
+        if (Math.random() > 0.35) {
+          return `${surname} ${randomItem(femaleMiddleNames)} ${randomItem(femaleFirstNames)}`;
+        }
+        return `${surname} ${randomItem(femaleFirstNames)}`;
+      }
+    }
+
     function generateFakeData() {
       const isMale = Math.random() > 0.5;
       const gender = isMale ? "Nam" : "Nữ";
 
-      const surname = randomItem(surnames);
-      const namePart = isMale ? randomItem(maleNames) : randomItem(femaleNames);
-      const fullName = `${surname} ${namePart}`;
+      const fullName = generateFullName(isMale);
 
-      const year = randomNumber(1985, 2005);
+      const year = randomNumber(1985, 2006);
       const month = randomNumber(1, 12);
       const day = randomNumber(1, 28);
       const birthday = `${day.toString().padStart(2, '0')}/${month.toString().padStart(2, '0')}/${year}`;
 
-      const emailPrefix = generateRandomString(randomNumber(6, 12));
+      const emailPrefix = generateRandomString(randomNumber(7, 13));
       const email = `${emailPrefix}@iq920.fun`;
 
-      const password = `Ab${generateRandomString(8)}${randomNumber(100,999)}!`;
+      const password = `Ab${generateRandomString(9)}${randomNumber(100,999)}!`;
 
       const phonePrefix = randomItem(["09", "03", "07", "08"]);
       const phone = `${phonePrefix}${randomNumber(10000000, 99999999)}`;
 
-      return { fullName, birthday, gender, email, password, phone, timestamp: new Date().toLocaleString('vi-VN') };
+      return {
+        fullName,
+        birthday,
+        gender,
+        email,
+        password,
+        phone,
+        timestamp: new Date().toLocaleString('vi-VN')
+      };
     }
 
     // Lưu vào Firebase
     function saveToFirebase(data) {
       push(registrationsRef, data)
-        .then(() => console.log("Lưu thành công!"))
-        .catch(err => console.error("Lỗi lưu:", err));
+        .then(() => {
+          const toast = document.getElementById("toast");
+          toast.textContent = "✅ Đã tạo và lưu thông tin thành công!";
+          toast.style.display = "block";
+          setTimeout(() => toast.style.display = "none", 2500);
+        })
+        .catch(err => console.error("Lỗi lưu Firebase:", err));
     }
 
     // Hiển thị real-time
     function listenRealtime() {
       const dataList = document.getElementById("dataList");
+      
       onValue(registrationsRef, (snapshot) => {
         dataList.innerHTML = "";
+        
         if (snapshot.exists()) {
+          const items = [];
           snapshot.forEach((child) => {
-            const item = child.val();
+            items.push({ key: child.key, ...child.val() });
+          });
+
+          // Sắp xếp mới nhất lên trên
+          items.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+
+          items.forEach(item => {
             const div = document.createElement("div");
             div.className = "info-box";
             div.innerHTML = `
-              <strong>ID:</strong> ${child.key}<br>
+              <div class="info-header">
+                <strong>ID:</strong> ${item.key.slice(0,8)}...
+              </div>
               <strong>Họ tên:</strong> ${item.fullName}<br>
               <strong>Ngày sinh:</strong> ${item.birthday}<br>
               <strong>Giới tính:</strong> ${item.gender}<br>
               <strong>Email:</strong> ${item.email}<br>
               <strong>Mật khẩu:</strong> ${item.password}<br>
               <strong>Điện thoại:</strong> ${item.phone}<br>
-              <strong>Thời gian:</strong> ${item.timestamp}
+              <small>Thời gian: ${item.timestamp}</small>
             `;
             dataList.appendChild(div);
           });
         } else {
-          dataList.innerHTML = "<p>Chưa có dữ liệu nào.</p>";
+          dataList.innerHTML = `<p class="empty">Chưa có dữ liệu nào được tạo.</p>`;
         }
       });
     }
 
-    // Xuất ra TXT và tải về
+    // Xuất file TXT
     function exportToTxt() {
-      const dataList = document.getElementById("dataList").querySelectorAll(".info-box");
-      if (dataList.length === 0) {
+      const boxes = document.querySelectorAll(".info-box");
+      if (boxes.length === 0) {
         alert("Chưa có dữ liệu để xuất!");
         return;
       }
@@ -117,9 +166,9 @@
       let content = "DANH SÁCH THÔNG TIN ĐĂNG KÝ NGẪU NHIÊN\n";
       content += "====================================\n\n";
 
-      dataList.forEach((box, index) => {
+      boxes.forEach((box, index) => {
         content += `Bộ ${index + 1}:\n`;
-        content += box.innerText.replace(/\n/g, "\n") + "\n";
+        content += box.innerText + "\n";
         content += "------------------------------------\n\n";
       });
 
@@ -127,19 +176,18 @@
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `fake-registrations-${new Date().toISOString().slice(0,10)}.txt`;
+      a.download = `fake-data-${new Date().toISOString().slice(0,10)}.txt`;
       a.click();
       URL.revokeObjectURL(url);
     }
 
-    // Sự kiện nút
+    // Khởi tạo
     window.onload = () => {
-      listenRealtime(); // Bắt đầu lắng nghe real-time ngay khi load
+      listenRealtime();
 
       document.getElementById("generateBtn").onclick = () => {
         const data = generateFakeData();
         saveToFirebase(data);
-        // Cập nhật real-time sẽ tự chạy nhờ onValue
       };
 
       document.getElementById("exportBtn").onclick = exportToTxt;
@@ -147,28 +195,168 @@
   </script>
 
   <style>
-    body { font-family: Arial, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; color: #1c1e21; }
-    .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-    h1 { text-align: center; color: #1877f2; }
-    button { padding: 12px 24px; background: #1877f2; color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; margin: 10px; }
-    button:hover { background: #166fe5; }
-    .info-box { background: #f5f6f7; padding: 15px; border-radius: 6px; margin: 10px 0; font-size: 15px; line-height: 1.5; white-space: pre-wrap; }
-    #dataList { max-height: 500px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; border-radius: 6px; }
+    :root {
+      --primary: #1877f2;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f0f2f5;
+      margin: 0;
+      padding: 12px;
+      color: #1c1e21;
+      line-height: 1.5;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+
+    header {
+      background: var(--primary);
+      color: white;
+      text-align: center;
+      padding: 18px 12px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.4rem;
+    }
+
+    .controls {
+      padding: 15px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      background: #f8f9fa;
+    }
+
+    button {
+      flex: 1;
+      min-height: 52px;
+      padding: 12px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #166fe5;
+    }
+
+    button:active {
+      transform: scale(0.97);
+    }
+
+    .data-section {
+      padding: 15px;
+    }
+
+    h3 {
+      margin: 10px 0 12px 0;
+      color: #333;
+    }
+
+    #dataList {
+      max-height: 65vh;
+      overflow-y: auto;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 8px;
+      background: #fafafa;
+    }
+
+    .info-box {
+      background: white;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 14px;
+      margin-bottom: 10px;
+      font-size: 15px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .info-header {
+      color: #1877f2;
+      font-size: 14px;
+      margin-bottom: 8px;
+      padding-bottom: 6px;
+      border-bottom: 1px dashed #ddd;
+    }
+
+    .empty {
+      text-align: center;
+      color: #888;
+      padding: 40px 20px;
+      font-style: italic;
+    }
+
+    small {
+      color: #666;
+      display: block;
+      margin-top: 8px;
+    }
+
+    #toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #4caf50;
+      color: white;
+      padding: 14px 24px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      display: none;
+      z-index: 1000;
+      font-weight: 500;
+    }
+
+    /* Scrollbar đẹp hơn */
+    #dataList::-webkit-scrollbar {
+      width: 6px;
+    }
+    #dataList::-webkit-scrollbar-thumb {
+      background: #c0c0c0;
+      border-radius: 3px;
+    }
   </style>
 </head>
 <body>
 
 <div class="container">
-  <h1>Random Fake Info + Lưu Firebase Realtime + Export TXT</h1>
+  <header>
+    <h1>🔀 Random Fake Info Việt Nam</h1>
+  </header>
 
-  <button id="generateBtn">Tạo & Lưu thông tin mới vào DB</button>
-  <button id="exportBtn">Xuất toàn bộ dữ liệu ra file TXT</button>
+  <div class="controls">
+    <button id="generateBtn">Tạo & Lưu thông tin mới</button>
+    <button id="exportBtn">📥 Xuất toàn bộ ra TXT</button>
+  </div>
 
-  <h3>Danh sách thông tin đã lưu (real-time):</h3>
-  <div id="dataList">
-    <p>Đang tải dữ liệu từ Firebase...</p>
+  <div class="data-section">
+    <h3>Danh sách thông tin đã lưu (Real-time)</h3>
+    <div id="dataList">
+      <p class="empty">Đang tải dữ liệu từ Firebase...</p>
+    </div>
   </div>
 </div>
+
+<div id="toast"></div>
 
 </body>
 </html>
