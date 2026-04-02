@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>📱 Danh sách Công việc</title>
+    <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-database-compat.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding-bottom: 100px;
+            overflow-x: hidden;
+        }
+
+        .app-container {
+            max-width: 100%;
+            margin: 0;
+            background: white;
+            min-height: 100vh;
+            border-radius: 0;
+            box-shadow: none;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 25px 20px;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 1.8em;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            font-size: 0.95em;
+            opacity: 0.9;
+        }
+
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: #f8f9ff;
+            font-size: 0.85em;
+            color: #64748b;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .task-count {
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+
+        .tasks-list {
+            padding: 20px;
+        }
+
+        .task-item {
+            background: white;
+            margin-bottom: 16px;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-left: 4px solid #4facfe;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            tap-highlight-color: transparent;
+        }
+
+        .task-item:active {
+            transform: scale(0.98);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+        }
+
+        .task-item.complete {
+            border-left-color: #10b981;
+            opacity: 0.85;
+        }
+
+        .task-item.complete .task-title {
+            text-decoration: line-through;
+        }
+
+        .task-badge {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.75em;
+            font-weight: 600;
+            background: rgba(79, 172, 254, 0.15);
+            color: #4facfe;
+        }
+
+        .task-item.complete .task-badge {
+            background: rgba(16, 185, 129, 0.15);
+            color: #10b981;
+        }
+
+        .task-title {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: #1e293b;
+            line-height: 1.4;
+            margin-bottom: 8px;
+            word-break: break-word;
+        }
+
+        .task-desc {
+            color: #64748b;
+            font-size: 0.95em;
+            line-height: 1.6;
+            margin-bottom: 12px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .task-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.85em;
+            color: #94a3b8;
+        }
+
+        .task-date {
+            background: #f1f5f9;
+            padding: 4px 8px;
+            border-radius: 8px;
+            font-size: 0.8em;
+        }
+
+        .task-link {
+            color: #4facfe;
+            text-decoration: none;
+            font-weight: 600;
+            word-break: break-all;
+        }
+
+        .task-link:active {
+            color: #3b82f6;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 80px 40px;
+            color: #94a3b8;
+        }
+
+        .empty-emoji {
+            font-size: 4em;
+            margin-bottom: 20px;
+            opacity: 0.5;
+            display: block;
+        }
+
+        /* TXT Import - Minimal */
+        .import-section {
+            padding: 20px;
+            background: #f8fafc;
+            border-top: 1px solid #e2e8f0;
+            position: sticky;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+        }
+
+        .import-btn {
+            display: block;
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 12px;
+        }
+
+        .import-btn:active {
+            transform: scale(0.98);
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        /* Loading */
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255,255,255,0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s ease;
+        }
+
+        .loading.show {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #f3f4f6;
+            border-top: 3px solid #4facfe;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* PWA */
+        @media (display-mode: standalone) {
+            body { padding-bottom: 120px; }
+        }
+
+        @media (max-width: 480px) {
+            .header h1 { font-size: 1.6em; }
+            .task-item { padding: 20px; margin-bottom: 12px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading -->
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+    </div>
+
+    <div class="app-container">
+        <div class="header">
+            <h1>📱 Công việc</h1>
+            <p>Cập nhật realtime • Click link để mở</p>
+        </div>
+
+        <div class="status-bar">
+            <span id="lastUpdate">Đang tải...</span>
+            <span class="task-count" id="taskCount">0</span>
+        </div>
+
+        <div class="tasks-list" id="tasksList">
+            <div class="empty-state">
+                <div class="empty-emoji">📭</div>
+                <h2>Chưa có công việc</h2>
+                <p>Import file TXT để xem danh sách</p>
+            </div>
+        </div>
+
+        <!-- TXT Import -->
+        <div class="import-section">
+            <button class="import-btn" onclick="document.getElementById('fileInput').click()">
+                📁 Import TXT
+            </button>
+            <small style="text-align: center; display: block; color: #64748b;">
+                Kéo thả hoặc chọn file TXT
+            </small>
+            <input type="file" id="fileInput" class="file-input" accept=".txt">
+        </div>
+    </div>
+
+    <script>
+        // Firebase
+        const firebaseConfig = {
+            databaseURL: "https://bankvanhungbian-default-rtdb.asia-southeast1.firebasedatabase.app/"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const tasksRef = db.ref('tasks');
+
+        let allTasks = [];
+        let tempTasks = [];
+
+        // Init
+        showLoading(true);
+        loadFirebaseTasks();
+
+        function loadFirebaseTasks() {
+            tasksRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                allTasks = data ? Object.entries(data).map(([id, task]) => ({
+                    id,
+                    ...task,
+                    source: 'firebase',
+                    isTemp: false
+                })) : [];
+                renderTasks();
+                updateStatus();
+                showLoading(false);
+            });
+        }
+
+        // File handling - Mobile optimized
+        const fileInput = document.getElementById('fileInput');
+        
+        // Drag & Drop + Click
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(event => {
+            document.body.addEventListener(event, preventDefault, false);
+        });
+
+        function preventDefault(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        document.body.addEventListener('drop', handleDrop, false);
+        fileInput.addEventListener('change', handleFile);
+
+        function handleDrop(e) {
+            const files = e.dataTransfer.files;
+            if (files[0]?.name.endsWith('.txt')) {
+                parseTxtFile(files[0]);
+            }
+        }
+
+        function handleFile(e) {
+            const file = e.target.files[0];
+            if (file) parseTxtFile(file);
+        }
+
+        function parseTxtFile(file) {
+            showLoading(true);
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const lines = e.target.result.split('\n').map(l => l.trim()).filter(Boolean);
+                tempTasks = [];
+                
+                lines.forEach((line, index) => {
+                    if (line.startsWith('📋') || line.startsWith('-') || line.startsWith('*')) {
+                        const title = line.replace(/^[📋\-\*]\s*/g, '').trim();
+                        if (title) {
+                            tempTasks.push({
+                                id: `temp_${Date.now()}_${index}`,
+                                title,
+                                description: '',
+                                completed: false,
+                                createdAt: Date.now(),
+                                source: 'txt',
+                                isTemp: true,
+                                filename: file.name.substring(0, 20)
+                            });
+                        }
+                    } else if (line.length > 2) {
+                        tempTasks.push({
+                            id: `temp_${Date.now()}_${index}`,
+                            title: line,
+                            description: '',
+                            completed: false,
+                            createdAt: Date.now(),
+                            source: 'txt',
+                            isTemp: true
+                        });
+                    }
+                });
+
+                renderTasks();
+                showLoading(false);
+                fileInput.value = '';
+            };
+            reader.readAsText(file);
+        }
+
+        function renderTasks() {
+            const tasks = [...allTasks, ...tempTasks].sort((a, b) => b.createdAt - a.createdAt);
+            
+            const container = document.getElementById('tasksList');
+            if (tasks.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-emoji">📭</div>
+                        <h2>Chưa có công việc</h2>
+                        <p>Import file TXT để xem danh sách</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = tasks.map(task => `
+                <div class="task-item ${task.completed ? 'complete' : ''}" 
+                     onclick="handleTaskClick('${task.title.replace(/'/g, "\\'")}', '${(task.description || '').replace(/'/g, "\\'")}')">
+                    <div class="task-badge">
+                        ${task.isTemp ? '📄 TXT' : '☁️ Live'}
+                    </div>
+                    <div class="task-title">${task.title}</div>
+                    ${task.description ? `<div class="task-desc">${task.description}</div>` : ''}
+                    <div class="task-meta">
+                        <span class="task-date">${new Date(task.createdAt).toLocaleDateString('vi-VN')}</span>
+                        ${task.completed ? '<span>✅ Hoàn thành</span>' : '<span>⏳ Đang làm</span>'}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function handleTaskClick(title, desc) {
+            // Copy to clipboard + Show link
+            const fullText = `${title}\n\n${desc || ''}`.trim();
+            
+            if (navigator.clipboard && navigator.share) {
+                // Modern mobile
+                if (navigator.canShare && navigator.canShare({ text: fullText })) {
+                    navigator.share({
+                        title: 'Công việc',
+                        text: fullText
+                    });
+                } else {
+                    navigator.clipboard.writeText(fullText).then(() => {
+                        showToast('📋 Đã copy! Nhấn giữ để paste.');
+                    });
+                }
+            } else {
+                // Fallback
+                const textArea = document.createElement('textarea');
+                textArea.value = fullText;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showToast('📋 Đã copy vào clipboard!');
+            }
+        }
+
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+                background: rgba(0,0,0,0.85); color: white; padding: 12px 24px;
+                border-radius: 25px; font-size: 14px; z-index: 10000;
+                animation: slideDown 0.3s ease;
+            `;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.remove();
+            }, 2500);
+        }
+
+        function showLoading(show) {
+            document.getElementById('loading').classList.toggle('show', show);
+        }
+
+        function updateStatus() {
+            const total = allTasks.length + tempTasks.length;
+            document.getElementById('taskCount').textContent = total;
+            document.getElementById('lastUpdate').textContent = 
+                `Cập nhật ${new Date().toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})}`;
+        }
+
+        // CSS Animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideDown {
+                from { transform: translateX(-50%) translateY(-100%); opacity: 0; }
+                to { transform: translateX(-50%) translateY(0); opacity: 1; }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // PWA Ready
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            deferredPrompt = e;
+        });
+    </script>
+</body>
+</html>
