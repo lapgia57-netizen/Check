@@ -2,538 +2,336 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>📋 Toàn bộ Công việc</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Hệ thống Quản lý Dữ liệu</title>
     <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-database-compat.js"></script>
     <style>
         :root {
-            --primary: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            --success: linear-gradient(135deg, #10b981 0%, #34d399 100%);
-            --bg-primary: #f8fafc;
-            --text-primary: #1e293b;
-            --text-secondary: #64748b;
-            --border: #e2e8f0;
+            --bg: #f2f2f7; /* Màu nền iOS nhạt */
+            --card-bg: #ffffff;
+            --primary: #007aff;
+            --text-main: #1c1c1e;
+            --text-sub: #8e8e93;
+            --success: #34c759;
+            --border: #e5e5ea;
         }
 
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
+            -webkit-font-smoothing: antialiased;
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: var(--bg-primary);
-            line-height: 1.6;
-            color: var(--text-primary);
-            overflow-x: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            padding-bottom: env(safe-area-inset-bottom);
         }
 
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            min-height: 100vh;
-            background: white;
-            box-shadow: 0 0 40px rgba(0,0,0,0.1);
+        /* Màn hình Login */
+        #loginScreen {
+            position: fixed;
+            inset: 0;
+            background: var(--bg);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
         }
 
-        /* Header */
-        .header {
+        .login-card {
+            background: var(--card-bg);
+            width: 100%;
+            max-width: 340px;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            text-align: center;
+        }
+
+        .login-card h2 { margin-bottom: 25px; font-size: 22px; font-weight: 700; }
+        
+        .input-field {
+            width: 100%;
+            padding: 14px;
+            margin-bottom: 12px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: #f9f9f9;
+            font-size: 16px; /* Chặn auto-zoom trên iOS */
+            outline: none;
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 14px;
             background: var(--primary);
             color: white;
-            padding: 30px 25px;
-            text-align: center;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* Giao diện chính */
+        #mainApp { display: none; }
+
+        .app-header {
+            background: var(--card-bg);
+            padding: 50px 20px 20px;
             position: sticky;
             top: 0;
             z-index: 100;
+            border-bottom: 0.5px solid var(--border);
         }
 
-        .header h1 {
-            font-size: clamp(1.8em, 5vw, 2.5em);
-            font-weight: 800;
-            margin-bottom: 8px;
-            letter-spacing: -0.02em;
-        }
-
-        .stats {
+        .header-top {
             display: flex;
-            justify-content: center;
-            gap: 24px;
-            margin-top: 16px;
-            flex-wrap: wrap;
-        }
-
-        .stat-item {
-            text-align: center;
-            background: rgba(255,255,255,0.2);
-            padding: 12px 20px;
-            border-radius: 16px;
-            backdrop-filter: blur(10px);
-            font-weight: 600;
-        }
-
-        .stat-number {
-            font-size: 1.4em;
-            display: block;
-        }
-
-        /* Content */
-        .content {
-            padding: 30px 25px;
-        }
-
-        .section {
-            margin-bottom: 40px;
-        }
-
-        .section-title {
-            font-size: 1.4em;
-            font-weight: 700;
-            color: var(--text-primary);
-            margin-bottom: 20px;
-            padding-bottom: 12px;
-            border-bottom: 2px solid var(--border);
-            display: flex;
+            justify-content: space-between;
             align-items: center;
-            gap: 12px;
+            margin-bottom: 15px;
         }
 
-        /* Task Cards */
-        .task-grid {
+        .header-top h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }
+
+        .logout-link { color: var(--primary); font-weight: 500; font-size: 15px; }
+
+        .summary-bar {
             display: grid;
-            gap: 20px;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
         }
 
-        .task-card {
-            background: white;
-            border-radius: 20px;
-            padding: 28px;
-            border: 1px solid var(--border);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            cursor: pointer;
-            position: relative;
-            overflow: hidden;
+        .summary-item {
+            background: #f9f9f9;
+            padding: 12px;
+            border-radius: 12px;
+            text-align: center;
         }
 
-        .task-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            border-color: #4facfe;
+        .summary-item span { display: block; font-size: 20px; font-weight: 700; color: var(--primary); }
+        .summary-item label { font-size: 12px; color: var(--text-sub); text-transform: uppercase; font-weight: 600; }
+
+        .container { padding: 15px; }
+
+        .list-title {
+            font-size: 17px;
+            font-weight: 600;
+            margin: 20px 5px 10px;
+            color: var(--text-sub);
         }
 
-        .task-card:active {
-            transform: translateY(-2px);
+        /* Data Cards - Tối ưu hiển thị nội dung dài */
+        .data-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 12px;
+            border: 0.5px solid var(--border);
+            transition: transform 0.1s;
         }
 
-        .task-header {
+        .data-card:active { transform: scale(0.98); background: #fafafa; }
+
+        .card-header {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-bottom: 16px;
+            margin-bottom: 8px;
         }
 
-        .task-title {
-            font-size: 1.25em;
+        .source-tag {
+            font-size: 10px;
             font-weight: 700;
-            line-height: 1.3;
-            color: var(--text-primary);
-            flex: 1;
-            margin-right: 12px;
-            word-break: break-word;
+            padding: 3px 7px;
+            border-radius: 6px;
+            text-transform: uppercase;
         }
 
-        .task-badge {
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 0.8em;
-            font-weight: 600;
-            white-space: nowrap;
+        .tag-firebase { background: #e1f0ff; color: #007aff; }
+        .tag-txt { background: #e8f5e9; color: #34c759; }
+
+        .card-body {
+            font-size: 16px;
+            line-height: 1.5;
+            color: var(--text-main);
+            word-wrap: break-word; /* Hiển thị toàn bộ text dài */
+            overflow-wrap: break-word;
+            white-space: pre-wrap; /* Giữ nguyên xuống dòng nếu có */
         }
 
-        .task-badge.firebase {
-            background: rgba(79, 172, 254, 0.15);
-            color: #4facfe;
-            border: 1px solid rgba(79, 172, 254, 0.3);
-        }
-
-        .task-badge.txt {
-            background: rgba(16, 185, 129, 0.15);
-            color: #10b981;
-            border: 1px solid rgba(16, 185, 129, 0.3);
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.6; }
-        }
-
-        .task-badge.complete {
-            background: rgba(16, 185, 129, 0.2);
-            color: #10b981;
-            border-color: rgba(16, 185, 129, 0.4);
-        }
-
-        .task-content {
-            margin-bottom: 20px;
-            min-height: 60px;
-        }
-
-        .task-desc {
-            color: var(--text-secondary);
-            font-size: 0.95em;
-            line-height: 1.6;
-        }
-
-        .task-link {
-            display: inline-block;
-            color: #4facfe;
-            text-decoration: none;
-            font-weight: 600;
-            word-break: break-all;
-            padding: 8px 12px;
-            background: rgba(79, 172, 254, 0.1);
-            border-radius: 8px;
-            border: 1px solid rgba(79, 172, 254, 0.2);
-            transition: all 0.2s ease;
+        .card-footer {
             margin-top: 12px;
-        }
-
-        .task-link:hover,
-        .task-link:active {
-            background: rgba(79, 172, 254, 0.2);
-            transform: translateY(-1px);
-        }
-
-        .task-meta {
+            padding-top: 10px;
+            border-top: 0.5px solid #f2f2f7;
             display: flex;
             justify-content: space-between;
+            font-size: 13px;
+            color: var(--text-sub);
+        }
+
+        /* Floating Action */
+        .fab {
+            position: fixed;
+            bottom: 30px;
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            background: var(--primary);
+            border-radius: 28px;
+            display: flex;
             align-items: center;
-            padding-top: 16px;
-            border-top: 1px solid var(--border);
-            font-size: 0.85em;
-            color: var(--text-secondary);
+            justify-content: center;
+            color: white;
+            box-shadow: 0 4px 15px rgba(0,122,255,0.3);
+            font-size: 24px;
         }
 
-        .task-date {
-            font-weight: 500;
-        }
-
-        /* Empty States */
-        .empty-section {
-            text-align: center;
-            padding: 60px 40px;
-            color: var(--text-secondary);
-        }
-
-        .empty-emoji {
-            font-size: 4em;
-            margin-bottom: 20px;
-            opacity: 0.6;
-        }
-
-        /* TXT Import */
-        .import-section {
-            padding: 30px 25px;
-            background: linear-gradient(135deg, #f0fdf4 0%, #f0f9ff 100%);
-            border-top: 4px solid #10b981;
-            margin-top: 40px;
-        }
-
-        .import-title {
-            font-size: 1.2em;
-            font-weight: 700;
-            margin-bottom: 16px;
-            color: #166534;
-        }
-
-        .import-zone {
-            border: 3px dashed #10b981;
-            border-radius: 16px;
-            padding: 40px 20px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            background: rgba(16, 185, 129, 0.05);
-        }
-
-        .import-zone:hover,
-        .import-zone.dragover {
-            border-color: #4facfe;
-            background: rgba(79, 172, 254, 0.05);
-            transform: scale(1.02);
-        }
-
-        .import-emoji {
-            font-size: 3.5em;
-            margin-bottom: 16px;
-            display: block;
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .task-grid {
-                grid-template-columns: 1fr;
-                gap: 16px;
-            }
-            
-            .content {
-                padding: 20px 16px;
-            }
-            
-            .stats {
-                gap: 16px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .header {
-                padding: 25px 20px;
-            }
-            
-            .task-card {
-                padding: 24px 20px;
-            }
-        }
+        #fileInput { display: none; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <!-- Header -->
-        <div class="header">
-            <h1>📋 Toàn bộ Dữ liệu</h1>
-            <div class="stats">
-                <div class="stat-item">
-                    <span class="stat-number" id="totalTasks">0</span>
-                    Tổng
-                </div>
-                <div class="stat-item">
-                    <span class="stat-number" id="completeTasks">0</span>
-                    ✅ Hoàn thành
-                </div>
-                <div class="stat-item">
-                    <span class="stat-number" id="pendingTasks">0</span>
-                    ⏳ Chờ
-                </div>
-            </div>
-        </div>
 
-        <div class="content">
-            <!-- Completed Tasks -->
-            <div class="section">
-                <h2 class="section-title">
-                    ✅ <span>Đã Hoàn Thành</span>
-                    <span id="completeCount" style="margin-left: auto; font-size: 1em; opacity: 0.8;"></span>
-                </h2>
-                <div class="task-grid" id="completedSection"></div>
-            </div>
-
-            <!-- Pending Tasks -->
-            <div class="section">
-                <h2 class="section-title">
-                    ⏳ <span>Chờ Xử Lý</span>
-                    <span id="pendingCount" style="margin-left: auto; font-size: 1em; opacity: 0.8;"></span>
-                </h2>
-                <div class="task-grid" id="pendingSection"></div>
-            </div>
-
-            <!-- TXT Import Section -->
-            <div class="import-section">
-                <h3 class="import-title">📄 Import TXT bổ sung</h3>
-                <div class="import-zone" onclick="fileInput.click()">
-                    <div class="import-emoji">📎</div>
-                    <h3>Kéo thả hoặc click</h3>
-                    <p>Công việc TXT sẽ hiển thị tạm thời</p>
-                </div>
-                <input type="file" id="fileInput" accept=".txt" style="display: none;">
-            </div>
+    <div id="loginScreen">
+        <div class="login-card">
+            <h2>Hệ thống Nội bộ</h2>
+            <input type="text" id="user" class="input-field" placeholder="Tài khoản">
+            <input type="password" id="pass" class="input-field" placeholder="Mật khẩu">
+            <button class="btn-primary" onclick="handleLogin()">Đăng nhập</button>
+            <p id="error" style="color:red; font-size:13px; margin-top:10px; display:none;">Sai tài khoản hoặc mật khẩu!</p>
         </div>
     </div>
 
+    <div id="mainApp">
+        <div class="app-header">
+            <div class="header-top">
+                <h1>Dữ liệu</h1>
+                <span class="logout-link" onclick="handleLogout()">Đăng xuất</span>
+            </div>
+            <div class="summary-bar">
+                <div class="summary-item">
+                    <span id="countTotal">0</span>
+                    <label>Tổng cộng</label>
+                </div>
+                <div class="summary-item">
+                    <span id="countFirebase" style="color: #34c759;">0</span>
+                    <label>Trực tuyến</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <h3 class="list-title">DANH SÁCH CHI TIẾT</h3>
+            <div id="dataList">
+                </div>
+        </div>
+
+        <div class="fab" onclick="document.getElementById('fileInput').click()">📄</div>
+        <input type="file" id="fileInput" accept=".txt">
+    </div>
+
     <script>
-        // Firebase Config
-        const firebaseConfig = {
-            databaseURL: "https://bankvanhungbian-default-rtdb.asia-southeast1.firebasedatabase.app/"
-        };
-
+        // Cấu hình bảo mật
+        const AUTH = { u: 'admin', p: 'topgame98' };
+        
+        // Firebase (Giữ nguyên cấu hình của bạn)
+        const firebaseConfig = { databaseURL: "https://bankvanhungbian-default-rtdb.asia-southeast1.firebasedatabase.app/" };
         firebase.initializeApp(firebaseConfig);
-        const tasksRef = firebase.database().ref('tasks');
+        const db = firebase.database().ref('tasks');
 
-        let firebaseTasks = [];
-        let txtTasks = [];
+        let allData = [];
 
-        // Load Firebase data
-        tasksRef.on('value', (snapshot) => {
-            const data = snapshot.val();
-            firebaseTasks = data ? 
-                Object.entries(data).map(([id, task]) => ({
-                    id,
-                    firebaseId: id,
-                    ...task,
-                    source: 'firebase'
+        // Kiểm tra Login
+        function handleLogin() {
+            const u = document.getElementById('user').value;
+            const p = document.getElementById('pass').value;
+            if(u === AUTH.u && p === AUTH.p) {
+                localStorage.setItem('session', 'active');
+                initApp();
+            } else {
+                document.getElementById('error').style.display = 'block';
+            }
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('session');
+            location.reload();
+        }
+
+        function initApp() {
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('mainApp').style.display = 'block';
+            loadFirebase();
+        }
+
+        if(localStorage.getItem('session') === 'active') initApp();
+
+        // Xử lý dữ liệu
+        function loadFirebase() {
+            db.on('value', snap => {
+                const data = snap.val();
+                const fbItems = data ? Object.entries(data).map(([id, obj]) => ({
+                    ...obj, id, source: 'firebase'
                 })) : [];
-            renderAll();
-        });
-
-        // File upload
-        document.getElementById('fileInput').addEventListener('change', handleFile);
-        const importZone = document.querySelector('.import-zone');
-
-        // Drag & drop
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(evt => {
-            importZone.addEventListener(evt, e => e.preventDefault());
-        });
-        importZone.addEventListener('drop', handleDrop);
-
-        function handleDrop(e) {
-            const file = e.dataTransfer.files[0];
-            if (file && file.name.endsWith('.txt')) parseTxtFile(file);
+                render(fbItems);
+            });
         }
 
-        function handleFile(e) {
+        // Import TXT
+        document.getElementById('fileInput').addEventListener('change', function(e) {
             const file = e.target.files[0];
-            if (file) parseTxtFile(file);
-        }
-
-        function parseTxtFile(file) {
             const reader = new FileReader();
-            reader.onload = e => {
-                const lines = e.target.result.split('\n')
-                    .map(l => l.trim())
-                    .filter(l => l && !l.startsWith('=') && !l.startsWith('-'));
-                
-                txtTasks = lines.map((line, i) => ({
-                    id: `txt_${Date.now()}_${i}`,
-                    title: line.startsWith('📋') ? line.slice(2).trim() : line,
-                    description: '',
-                    completed: false,
+            reader.onload = function(event) {
+                const lines = event.target.result.split('\n').filter(l => l.trim().length > 0);
+                const txtItems = lines.map((l, i) => ({
+                    title: l.trim(),
                     createdAt: Date.now(),
-                    source: 'txt',
-                    filename: file.name.slice(0, 20)
-                })).filter(t => t.title.length > 1);
-
-                renderAll();
+                    source: 'txt'
+                }));
+                render(txtItems, true); // Append mode
             };
             reader.readAsText(file);
-        }
+        });
 
-        function renderAll() {
-            const allTasks = [...firebaseTasks, ...txtTasks];
-            
-            // Split: completed first
-            const completed = allTasks.filter(t => t.completed).sort((a, b) => b.createdAt - a.createdAt);
-            const pending = allTasks.filter(t => !t.completed).sort((a, b) => b.createdAt - a.createdAt);
+        function render(items, append = false) {
+            const container = document.getElementById('dataList');
+            if(!append) allData = items; 
+            else allData = [...items, ...allData];
 
-            renderSection('completedSection', completed);
-            renderSection('pendingSection', pending);
+            document.getElementById('countTotal').innerText = allData.length;
+            document.getElementById('countFirebase').innerText = allData.filter(i => i.source === 'firebase').length;
 
-            // Update stats
-            document.getElementById('totalTasks').textContent = allTasks.length;
-            document.getElementById('completeTasks').textContent = completed.length;
-            document.getElementById('pendingTasks').textContent = pending.length;
-            document.getElementById('completeCount').textContent = `(${completed.length})`;
-            document.getElementById('pendingCount').textContent = `(${pending.length})`;
-        }
-
-        function renderSection(containerId, tasks) {
-            const container = document.getElementById(containerId);
-            
-            if (tasks.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-section">
-                        <div class="empty-emoji">${containerId === 'completedSection' ? '🎉' : '⏳'}</div>
-                        <h3>${containerId === 'completedSection' ? 'Chưa có công việc hoàn thành' : 'Chưa có công việc nào'}</h3>
-                        <p>${containerId === 'completedSection' ? 'Hoàn thành công việc để xem ở đây!' : 'Import TXT hoặc chờ dữ liệu Firebase'}</p>
-                    </div>
-                `;
-                return;
-            }
-
-            container.innerHTML = tasks.map(task => `
-                <div class="task-card ${task.completed ? 'complete' : ''}" 
-                     onclick="openTask('${task.title.replace(/'/g, "\\'").replace(/"/g, '\\"')}')">
-                    <div class="task-header">
-                        <div class="task-title">${task.title}</div>
-                        <div class="task-badge ${task.source} ${task.completed ? 'complete' : ''}">
-                            ${task.source === 'firebase' ? '☁️ LIVE' : '📄 TXT'}
-                        </div>
-                    </div>
-                    ${task.description ? `
-                        <div class="task-content">
-                            <div class="task-desc">${task.description}</div>
-                        </div>
-                    ` : ''}
-                    <div class="task-meta">
-                        <span class="task-date">
-                            ${new Date(task.createdAt).toLocaleString('vi-VN', {
-                                day: '2-digit',
-                                month: '2-digit',
-                                year: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                            })}
+            container.innerHTML = allData.map(item => `
+                <div class="data-card" onclick="copy('${item.title}')">
+                    <div class="card-header">
+                        <span class="source-tag tag-${item.source}">${item.source}</span>
+                        <span style="font-size:11px; color:#8e8e93;">
+                            ${new Date(item.createdAt || Date.now()).toLocaleDateString('vi-VN')}
                         </span>
-                        <span>${task.completed ? '✅ Hoàn thành' : '⏳ Đang xử lý'}</span>
+                    </div>
+                    <div class="card-body">${item.title}</div>
+                    ${item.description ? `<div class="card-body" style="color:#666; font-size:14px; margin-top:5px;">${item.description}</div>` : ''}
+                    <div class="card-footer">
+                        <span>Nhấn để copy</span>
+                        <span>${item.completed ? '✅ Xong' : '⏳ Chờ'}</span>
                     </div>
                 </div>
             `).join('');
         }
 
-        function openTask(title) {
-            // Detect URLs in title/description
-            const urlRegex = /(https?:\/\/[^\s]+)/g;
-            const urls = title.match(urlRegex);
-            
-            if (urls && urls.length > 0) {
-                // Open first URL
-                window.open(urls[0], '_blank');
-            } else {
-                // Copy to clipboard
-                navigator.clipboard.writeText(title).then(() => {
-                    showToast('📋 Đã copy! Nhấn giữ để paste hoặc share.');
-                }).catch(() => {
-                    fallbackCopy(title);
-                });
-            }
-        }
-
-        function fallbackCopy(text) {
-            const textarea = document.createElement('textarea');
-            textarea.value = text;
-            textarea.style.position = 'fixed';
-            textarea.style.opacity = '0';
-            document.body.appendChild(textarea);
-            textarea.focus();
-            textarea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textarea);
-            showToast('📋 Đã copy!');
-        }
-
-        function showToast(msg) {
+        function copy(text) {
+            navigator.clipboard.writeText(text);
             const toast = document.createElement('div');
-            toast.textContent = msg;
-            toast.style.cssText = `
-                position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
-                background: rgba(0,0,0,0.9); color: white; padding: 16px 24px;
-                border-radius: 12px; font-weight: 600; z-index: 10000;
-                box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            `;
+            toast.style = "position:fixed; bottom:100px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.7); color:white; padding:10px 20px; border-radius:20px; font-size:14px; z-index:2000;";
+            toast.innerText = "Đã sao chép nội dung!";
             document.body.appendChild(toast);
-            setTimeout(() => toast.remove(), 3000);
+            setTimeout(() => toast.remove(), 1500);
         }
-
-        // Auto-detect links in real-time
-        document.addEventListener('click', e => {
-            const link = e.target.closest('.task-link');
-            if (link) {
-                e.preventDefault();
-                window.open(link.href, '_blank');
-            }
-        }, true);
     </script>
 </body>
 </html>
