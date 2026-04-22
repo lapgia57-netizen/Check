@@ -3,394 +3,269 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cyber Games Locations</title>
-    <!-- Bootstrap CSS -->
+    <title>Cyber Games Admin - Locations</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Maps API -->
     <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&libraries=places"></script>
     <style>
-        #map {
-            height: 400px;
-            width: 100%;
-            margin-bottom: 20px;
-            border-radius: 10px;
-        }
-        .location-card {
-            transition: transform 0.2s;
-            cursor: pointer;
-        }
-        .location-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        }
-        .map-link {
-            font-size: 0.9rem;
-            word-break: break-all;
-        }
+        body { background-color: #f4f7f6; }
+        #map { height: 450px; width: 100%; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .location-card { transition: all 0.3s; cursor: pointer; border: none; border-radius: 10px; }
+        .location-card:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(0,0,0,0.15); }
+        #loginSection { max-width: 400px; margin: 100px auto; }
+        #adminContent { display: none; } /* Ẩn nội dung khi chưa login */
     </style>
 </head>
 <body>
-    <div class="container mt-4">
-        <h1 class="text-center mb-4">📍 Quản Lý Địa Điểm Cyber Games</h1>
-        
-        <!-- Form thêm/sửa địa điểm -->
-        <div class="card mb-4">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0" id="formTitle">Thêm Địa Điểm Mới</h5>
-            </div>
-            <div class="card-body">
-                <form id="locationForm">
-                    <div class="mb-3">
-                        <label for="name" class="form-label">Tên địa điểm</label>
-                        <input type="text" class="form-control" id="name" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="address" class="form-label">Địa chỉ</label>
-                        <input type="text" class="form-control" id="address" required>
-                        <small class="text-muted">Nhập địa chỉ và chọn từ gợi ý</small>
-                    </div>
-                    <div class="mb-3">
-                        <label for="mapLink" class="form-label">Link Google Maps</label>
-                        <input type="url" class="form-control" id="mapLink" placeholder="https://maps.google.com/?q=lat,lng">
-                        <small class="text-muted">Link sẽ được tự động tạo khi chọn địa điểm</small>
-                    </div>
-                    <input type="hidden" id="lat">
-                    <input type="hidden" id="lng">
-                    <input type="hidden" id="locationId">
-                    <button type="submit" class="btn btn-primary" id="submitBtn">Thêm địa điểm</button>
-                    <button type="button" class="btn btn-secondary" id="cancelBtn" style="display: none;">Hủy</button>
-                </form>
-            </div>
-        </div>
 
-        <!-- Bản đồ -->
-        <div class="card mb-4">
-            <div class="card-header bg-success text-white">
-                <h5 class="mb-0">Bản Đồ Các Địa Điểm</h5>
+    <div id="loginSection" class="container">
+        <div class="card shadow">
+            <div class="card-header bg-dark text-white text-center">
+                <h4>🔐 Đăng Nhập Hệ Thống</h4>
             </div>
             <div class="card-body">
-                <div id="map"></div>
-            </div>
-        </div>
-
-        <!-- Danh sách địa điểm -->
-        <div class="card">
-            <div class="card-header bg-info text-white">
-                <h5 class="mb-0">Danh Sách Địa Điểm Cyber Games</h5>
-            </div>
-            <div class="card-body">
-                <div class="row" id="locationsList">
-                    <!-- Locations will be loaded here -->
+                <div class="mb-3">
+                    <label class="form-label">Tài khoản</label>
+                    <input type="text" id="userLogin" class="form-control" placeholder="Nhập username">
                 </div>
+                <div class="mb-3">
+                    <label class="form-label">Mật khẩu</label>
+                    <input type="password" id="passLogin" class="form-control" placeholder="Nhập password">
+                </div>
+                <button class="btn btn-dark w-100" onclick="handleLogin()">Vào Hệ Thống</button>
             </div>
         </div>
     </div>
 
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Firebase SDK -->
+    <div id="adminContent" class="container mt-4 mb-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>📍 Cyber Games Manager</h1>
+            <button class="btn btn-outline-danger" onclick="handleLogout()">Đăng xuất <i class="fas fa-sign-out-alt"></i></button>
+        </div>
+        
+        <div class="row">
+            <div class="col-lg-4">
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-header bg-primary text-white"><h5 class="mb-0" id="formTitle">Thêm Địa Điểm</h5></div>
+                    <div class="card-body">
+                        <form id="locationForm">
+                            <input type="hidden" id="locationId">
+                            <div class="mb-3">
+                                <label class="form-label font-weight-bold">Tên Cyber</label>
+                                <input type="text" class="form-control" id="name" required placeholder="VD: Cyber Gaming A">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Địa chỉ (Tìm kiếm)</label>
+                                <input type="text" class="form-control" id="address" required placeholder="Nhập để tìm trên bản đồ...">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Google Maps Link</label>
+                                <input type="text" class="form-control bg-light" id="mapLink" readonly>
+                            </div>
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary" id="submitBtn">Lưu địa điểm</button>
+                                <button type="button" class="btn btn-secondary" id="cancelBtn" style="display:none;">Hủy</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-8">
+                <div id="map"></div>
+            </div>
+        </div>
+
+        <hr class="my-5">
+
+        <h3 class="mb-4 text-secondary"><i class="fas fa-list"></i> Danh Sách Chi Nhánh</h3>
+        <div class="row" id="locationsList"></div>
+    </div>
+
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script>
     
     <script>
-        // Firebase configuration
+        // 1. LOGIN LOGIC
+        function handleLogin() {
+            const user = document.getElementById('userLogin').value;
+            const pass = document.getElementById('passLogin').value;
+
+            if (user === 'user' && pass === '123456') {
+                sessionStorage.setItem('isLoggedIn', 'true');
+                checkAuth();
+            } else {
+                alert('Sai tài khoản hoặc mật khẩu!');
+            }
+        }
+
+        function handleLogout() {
+            sessionStorage.removeItem('isLoggedIn');
+            location.reload();
+        }
+
+        function checkAuth() {
+            if (sessionStorage.getItem('isLoggedIn') === 'true') {
+                document.getElementById('loginSection').style.display = 'none';
+                document.getElementById('adminContent').style.display = 'block';
+                initMap(); // Khởi tạo map sau khi đã login
+            }
+        }
+
+        // 2. FIREBASE CONFIG
         const firebaseConfig = {
             databaseURL: "https://project-doidoi-default-rtdb.asia-southeast1.firebasedatabase.app/"
         };
-
-        // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
-        const locationsRef = database.ref('cyber-games-locations');
+        const db = firebase.database().ref('cyber-games-locations');
 
-        // Global variables
-        let map;
-        let markers = [];
-        let autocomplete;
-        let currentMarker = null;
+        // 3. MAP LOGIC
+        let map, autocomplete, currentMarker, markers = [];
 
-        // Hàm tạo link Google Maps từ tọa độ
-        function generateMapLink(lat, lng) {
-            return `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
-        }
-
-        // Hàm trích xuất tọa độ từ link Google Maps
-        function extractCoordinatesFromLink(link) {
-            try {
-                const url = new URL(link);
-                const params = new URLSearchParams(url.search);
-                const query = params.get('query') || params.get('q');
-                if (query) {
-                    const coords = query.split(',');
-                    if (coords.length === 2) {
-                        return {
-                            lat: parseFloat(coords[0]),
-                            lng: parseFloat(coords[1])
-                        };
-                    }
-                }
-            } catch (e) {
-                console.error('Invalid URL:', e);
-            }
-            return null;
-        }
-
-        // Initialize Google Maps
         function initMap() {
-            // Default center (Ho Chi Minh City)
-            const defaultLocation = { lat: 10.8231, lng: 106.6297 };
-            
+            const hcm = { lat: 10.762622, lng: 106.660172 };
             map = new google.maps.Map(document.getElementById('map'), {
-                center: defaultLocation,
-                zoom: 12
+                center: hcm, zoom: 13,
+                mapTypeControl: false
             });
 
-            // Initialize autocomplete for address input
-            const addressInput = document.getElementById('address');
-            autocomplete = new google.maps.places.Autocomplete(addressInput);
-            autocomplete.addListener('place_changed', function() {
-                const place = autocomplete.getPlace();
-                if (place.geometry) {
-                    const lat = place.geometry.location.lat();
-                    const lng = place.geometry.location.lng();
-                    
-                    document.getElementById('lat').value = lat;
-                    document.getElementById('lng').value = lng;
-                    document.getElementById('mapLink').value = generateMapLink(lat, lng);
-                    
-                    // Update or create marker
-                    if (currentMarker) {
-                        currentMarker.setMap(null);
-                    }
-                    currentMarker = new google.maps.Marker({
-                        map: map,
-                        position: place.geometry.location,
-                        title: place.name
-                    });
-                    map.setCenter(place.geometry.location);
-                }
-            });
+            // Autocomplete
+            autocomplete = new google.maps.places.Autocomplete(document.getElementById('address'));
+            autocomplete.addListener('place_changed', onPlaceChanged);
 
-            // Click on map to set location
-            map.addListener('click', function(e) {
-                const lat = e.latLng.lat();
-                const lng = e.latLng.lng();
-                
-                document.getElementById('lat').value = lat;
-                document.getElementById('lng').value = lng;
-                document.getElementById('mapLink').value = generateMapLink(lat, lng);
-                
-                // Reverse geocoding to get address
-                const geocoder = new google.maps.Geocoder();
-                geocoder.geocode({ location: e.latLng }, function(results, status) {
-                    if (status === 'OK' && results[0]) {
-                        document.getElementById('address').value = results[0].formatted_address;
-                    }
-                });
+            // Click bản đồ để chọn vị trí
+            map.addListener('click', (e) => updateMarkerAndInputs(e.latLng));
 
-                if (currentMarker) {
-                    currentMarker.setMap(null);
-                }
-                currentMarker = new google.maps.Marker({
-                    map: map,
-                    position: e.latLng
-                });
-            });
-
-            // Load existing locations
-            loadLocations();
+            loadData();
         }
 
-        // Load all locations from Firebase
-        function loadLocations() {
-            locationsRef.on('value', function(snapshot) {
-                const locations = snapshot.val();
-                displayLocations(locations);
-                displayMarkers(locations);
+        function onPlaceChanged() {
+            const place = autocomplete.getPlace();
+            if (!place.geometry) return;
+            updateMarkerAndInputs(place.geometry.location);
+            map.setCenter(place.geometry.location);
+        }
+
+        function updateMarkerAndInputs(latLng) {
+            const lat = latLng.lat();
+            const lng = latLng.lng();
+            
+            // Cập nhật Marker tạm thời
+            if (currentMarker) currentMarker.setMap(null);
+            currentMarker = new google.maps.Marker({ position: latLng, map: map, animation: google.maps.Animation.DROP });
+
+            // Link Map chuẩn SEO
+            document.getElementById('mapLink').value = `https://www.google.com/maps?q=${lat},${lng}`;
+
+            // Lấy địa chỉ từ tọa độ (Reverse Geocoding)
+            new google.maps.Geocoder().geocode({ location: latLng }, (results, status) => {
+                if (status === 'OK' && results[0]) {
+                    document.getElementById('address').value = results[0].formatted_address;
+                }
             });
         }
 
-        // Display locations as cards
-        function displayLocations(locations) {
-            const locationsList = document.getElementById('locationsList');
-            locationsList.innerHTML = '';
+        // Regex thần thánh để tách Lat/Lng từ Link
+        function parseCoords(link) {
+            const regex = /q=(-?\d+\.\d+),(-?\d+\.\d+)/;
+            const match = link.match(regex);
+            return match ? { lat: parseFloat(match[1]), lng: parseFloat(match[2]) } : null;
+        }
 
-            if (!locations) {
-                locationsList.innerHTML = '<div class="col-12 text-center">Chưa có địa điểm nào</div>';
-                return;
-            }
+        function loadData() {
+            db.on('value', snapshot => {
+                const data = snapshot.val();
+                renderCards(data);
+                renderMarkers(data);
+            });
+        }
 
-            Object.entries(locations).forEach(([id, location]) => {
-                const col = document.createElement('div');
-                col.className = 'col-md-4 mb-3';
-                
-                // Trích xuất tọa độ từ link map để hiển thị marker
-                const coords = extractCoordinatesFromLink(location.mapLink);
-                
-                col.innerHTML = `
-                    <div class="card location-card" onclick="centerMap('${location.mapLink}')">
-                        <div class="card-body">
-                            <h5 class="card-title">${location.name}</h5>
-                            <p class="card-text">
-                                <i class="fas fa-map-marker-alt text-danger"></i> ${location.address}
-                            </p>
-                            <p class="card-text map-link">
-                                <i class="fas fa-link text-primary"></i> 
-                                <a href="${location.mapLink}" target="_blank" onclick="event.stopPropagation()">Xem trên Google Maps</a>
-                            </p>
-                            <button class="btn btn-sm btn-warning" onclick="editLocation('${id}', '${location.name}', '${location.address}', '${location.mapLink}')">
-                                <i class="fas fa-edit"></i> Sửa
-                            </button>
-                            <button class="btn btn-sm btn-danger" onclick="deleteLocation('${id}')">
-                                <i class="fas fa-trash"></i> Xóa
-                            </button>
+        function renderCards(data) {
+            const container = document.getElementById('locationsList');
+            container.innerHTML = '';
+            if (!data) { container.innerHTML = '<p class="text-center">Chưa có dữ liệu.</p>'; return; }
+
+            Object.entries(data).forEach(([id, item]) => {
+                container.innerHTML += `
+                    <div class="col-md-4 mb-3">
+                        <div class="card location-card shadow-sm h-100" onclick="focusLocation('${item.mapLink}')">
+                            <div class="card-body">
+                                <h5 class="text-primary">${item.name}</h5>
+                                <p class="small text-muted"><i class="fas fa-map-marker-alt"></i> ${item.address}</p>
+                                <div class="btn-group w-100 mt-2">
+                                    <button class="btn btn-sm btn-outline-warning" onclick="event.stopPropagation(); startEdit('${id}', '${item.name}', '${item.address}', '${item.mapLink}')">Sửa</button>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="event.stopPropagation(); deleteLoc('${id}')">Xóa</button>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                `;
-                locationsList.appendChild(col);
+                    </div>`;
             });
         }
 
-        // Display markers on map
-        function displayMarkers(locations) {
-            // Clear existing markers
-            markers.forEach(marker => marker.setMap(null));
+        function renderMarkers(data) {
+            markers.forEach(m => m.setMap(null));
             markers = [];
+            if (!data) return;
 
-            if (!locations) return;
-
-            Object.entries(locations).forEach(([id, location]) => {
-                const coords = extractCoordinatesFromLink(location.mapLink);
-                if (coords) {
+            Object.values(data).forEach(item => {
+                const coord = parseCoords(item.mapLink);
+                if (coord) {
                     const marker = new google.maps.Marker({
-                        map: map,
-                        position: coords,
-                        title: location.name
+                        position: coord, map: map, title: item.name,
+                        icon: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png'
                     });
-
-                    const infoWindow = new google.maps.InfoWindow({
-                        content: `<h6>${location.name}</h6><p>${location.address}</p><a href="${location.mapLink}" target="_blank">Xem trên Google Maps</a>`
-                    });
-
-                    marker.addListener('click', function() {
-                        infoWindow.open(map, marker);
-                    });
-
                     markers.push(marker);
                 }
             });
         }
 
-        // Center map on selected location
-        window.centerMap = function(mapLink) {
-            const coords = extractCoordinatesFromLink(mapLink);
-            if (coords) {
-                map.setCenter(coords);
-                map.setZoom(15);
-            }
-        };
-
-        // Form submit handler
-        document.getElementById('locationForm').addEventListener('submit', function(e) {
+        // CRUD Actions
+        document.getElementById('locationForm').onsubmit = (e) => {
             e.preventDefault();
-
             const id = document.getElementById('locationId').value;
-            const location = {
+            const payload = {
                 name: document.getElementById('name').value,
                 address: document.getElementById('address').value,
-                mapLink: document.getElementById('mapLink').value,
-                timestamp: firebase.database.ServerValue.TIMESTAMP
+                mapLink: document.getElementById('mapLink').value
             };
 
-            // Validate map link
-            if (!location.mapLink) {
-                alert('Vui lòng chọn địa điểm trên bản đồ!');
-                return;
-            }
+            if (id) db.child(id).update(payload);
+            else db.push(payload);
+            
+            resetForm();
+        };
 
-            if (id) {
-                // Update existing location
-                locationsRef.child(id).update(location)
-                    .then(() => {
-                        resetForm();
-                        alert('Cập nhật địa điểm thành công!');
-                    })
-                    .catch(error => alert('Lỗi: ' + error.message));
-            } else {
-                // Add new location
-                locationsRef.push(location)
-                    .then(() => {
-                        resetForm();
-                        alert('Thêm địa điểm thành công!');
-                    })
-                    .catch(error => alert('Lỗi: ' + error.message));
-            }
-        });
-
-        // Edit location
-        window.editLocation = function(id, name, address, mapLink) {
+        window.startEdit = (id, name, addr, link) => {
             document.getElementById('locationId').value = id;
             document.getElementById('name').value = name;
-            document.getElementById('address').value = address;
-            document.getElementById('mapLink').value = mapLink;
+            document.getElementById('address').value = addr;
+            document.getElementById('mapLink').value = link;
+            document.getElementById('formTitle').innerText = "Chỉnh Sửa Địa Điểm";
+            document.getElementById('submitBtn').innerText = "Cập Nhật";
+            document.getElementById('cancelBtn').style.display = "block";
             
-            // Trích xuất tọa độ từ link để hiển thị marker
-            const coords = extractCoordinatesFromLink(mapLink);
-            if (coords) {
-                document.getElementById('lat').value = coords.lat;
-                document.getElementById('lng').value = coords.lng;
-                
-                // Update marker
-                if (currentMarker) {
-                    currentMarker.setMap(null);
-                }
-                currentMarker = new google.maps.Marker({
-                    map: map,
-                    position: coords,
-                    title: name
-                });
-                map.setCenter(coords);
-            }
-            
-            document.getElementById('formTitle').textContent = 'Sửa Địa Điểm';
-            document.getElementById('submitBtn').textContent = 'Cập nhật';
-            document.getElementById('cancelBtn').style.display = 'inline-block';
+            const coord = parseCoords(link);
+            if (coord) map.setCenter(coord);
         };
 
-        // Delete location
-        window.deleteLocation = function(id) {
-            if (confirm('Bạn có chắc muốn xóa địa điểm này?')) {
-                locationsRef.child(id).remove()
-                    .then(() => alert('Xóa thành công!'))
-                    .catch(error => alert('Lỗi: ' + error.message));
-            }
-        };
+        window.deleteLoc = (id) => { if(confirm('Xóa địa điểm này?')) db.child(id).remove(); };
 
-        // Reset form
         function resetForm() {
             document.getElementById('locationForm').reset();
             document.getElementById('locationId').value = '';
-            document.getElementById('lat').value = '';
-            document.getElementById('lng').value = '';
-            document.getElementById('formTitle').textContent = 'Thêm Địa Điểm Mới';
-            document.getElementById('submitBtn').textContent = 'Thêm địa điểm';
-            document.getElementById('cancelBtn').style.display = 'none';
-            
-            if (currentMarker) {
-                currentMarker.setMap(null);
-                currentMarker = null;
-            }
+            document.getElementById('formTitle').innerText = "Thêm Địa Điểm";
+            document.getElementById('submitBtn').innerText = "Lưu địa điểm";
+            document.getElementById('cancelBtn').style.display = "none";
+            if (currentMarker) currentMarker.setMap(null);
         }
 
-        // Cancel edit
-        document.getElementById('cancelBtn').addEventListener('click', resetForm);
-
-        // Load map when page loads
-        window.onload = function() {
-            initMap();
+        window.focusLocation = (link) => {
+            const coord = parseCoords(link);
+            if(coord) { map.setCenter(coord); map.setZoom(17); }
         };
+
+        // Khởi chạy khi load trang
+        window.onload = checkAuth;
     </script>
 </body>
 </html>
